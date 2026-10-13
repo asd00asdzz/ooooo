@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>อัปโหลดวิดีโอ | Creator Studio</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #161823;
+      --muted: #777983;
+      --line: #e7e7eb;
+      --soft: #f7f7f8;
+      --pink: #fe2c55;
+      --cyan: #25f4ee;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font-family: Inter, "Noto Sans Thai", Tahoma, Arial, sans-serif;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      height: 64px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(255,255,255,.96);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 18px; letter-spacing: -.4px; }
+    .brand-mark {
+      width: 27px; height: 27px; display: grid; place-items: center;
+      border-radius: 8px; color: white; background: var(--ink); font-size: 15px;
+      box-shadow: 2px 0 var(--cyan), -2px 0 var(--pink);
+    }
+    .top-actions { display: flex; align-items: center; gap: 18px; color: #555761; font-size: 14px; }
+    .help-link { color: inherit; text-decoration: none; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: #f2d8c8; color: #704c3b; font-weight: 700; }
+
+    .layout { min-height: calc(100vh - 64px); display: grid; grid-template-columns: 224px minmax(0, 1fr); }
+    .sidebar { border-right: 1px solid var(--line); padding: 26px 12px; }
+    .side-label { margin: 0 12px 12px; color: #999ba3; font-size: 11px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; }
+    .nav-item {
+      min-height: 44px; padding: 0 12px; margin: 3px 0; border-radius: 8px;
+      display: flex; align-items: center; gap: 12px; color: #555761; font-size: 14px; text-decoration: none;
+    }
+    .nav-item.active { background: #f7f7f8; color: var(--ink); font-weight: 700; }
+    .nav-icon { width: 20px; text-align: center; font-size: 18px; }
+    .side-divider { border: 0; border-top: 1px solid var(--line); margin: 22px 10px; }
+    .account-note { padding: 14px 12px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+    main { width: min(100%, 1160px); padding: 34px 42px 64px; margin: 0 auto; }
+    .heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 26px; }
+    h1 { margin: 0; font-size: 26px; letter-spacing: -.6px; }
+    .subtitle { margin: 7px 0 0; color: var(--muted); font-size: 14px; }
+    .draft-status { color: #888a93; font-size: 12px; padding-top: 8px; white-space: nowrap; }
+    .editor { display: grid; grid-template-columns: minmax(350px, 1fr) 300px; gap: 26px; align-items: start; }
+    .card { border: 1px solid var(--line); border-radius: 12px; background: white; }
+    .upload-card { padding: 23px; }
+    .section-title { margin: 0 0 6px; font-size: 16px; font-weight: 750; }
+    .section-help { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0 0 17px; }
+    .dropzone {
+      min-height: 322px; border: 1.5px dashed #c9c9d0; border-radius: 10px;
+      background: #fafafa; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; padding: 24px; transition: .18s ease;
+    }
+    .dropzone.dragging { border-color: var(--pink); background: #fff5f7; }
+    .upload-symbol { width: 56px; height: 56px; border-radius: 18px; background: #fff; border: 1px solid var(--line); display: grid; place-items: center; font-size: 25px; margin-bottom: 14px; }
+    .drop-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .drop-help { color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .choose-button, .primary-button {
+      border: 0; color: white; background: var(--pink); border-radius: 6px;
+      min-height: 40px; padding: 0 19px; font-weight: 700; font-size: 13px;
+    }
+    .choose-button { margin-top: 17px; }
+    .choose-button:hover, .primary-button:hover { background: #e91f49; }
+    .requirements { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 17px; color: #777983; font-size: 11px; }
+    .requirement::before { content: "•"; margin-right: 6px; color: #a4a5ab; }
+    #fileInput { display: none; }
+    .preview-wrap { display: none; width: 100%; }
+    .preview-wrap.visible { display: block; }
+    .preview-video { display: block; width: auto; max-width: 100%; max-height: 390px; margin: auto; border-radius: 8px; background: #111; }
+    .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; font-size: 12px; }
+    .file-meta { min-width: 0; }
+    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .file-size { color: var(--muted); margin-top: 4px; }
+    .text-button { color: var(--pink); background: none; border: 0; padding: 6px; font-weight: 700; font-size: 12px; }
+
+    .form-card { padding: 22px; }
+    .field { margin-bottom: 21px; }
+    .field-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; margin-bottom: 9px; }
+    .counter { color: #9a9ba2; font-size: 11px; font-weight: 400; }
+    textarea, select {
+      display: block; width: 100%; border: 1px solid #dedee3; border-radius: 6px;
+      background: white; color: var(--ink); outline: none;
+    }
+    textarea { min-height: 110px; resize: vertical; padding: 11px 12px; line-height: 1.6; font-size: 13px; }
+    textarea:focus, select:focus { border-color: #9b9ca4; }
+    .caption-tools { color: #83858e; font-size: 11px; margin-top: 7px; }
+    select { height: 40px; padding: 0 10px; font-size: 13px; }
+    .toggle-row { min-height: 43px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid #f0f0f2; font-size: 12px; }
+    .switch { position: relative; width: 34px; height: 20px; flex: 0 0 auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #d5d5da; border-radius: 20px; transition: .2s; cursor: pointer; }
+    .slider::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .2s; }
+    .switch input:checked + .slider { background: var(--pink); }
+    .switch input:checked + .slider::before { transform: translateX(14px); }
+    .post-actions { display: flex; gap: 9px; margin-top: 24px; }
+    .secondary-button { min-height: 40px; padding: 0 14px; border: 1px solid #dedee3; border-radius: 6px; background: white; color: var(--ink); font-size: 12px; font-weight: 700; }
+    .primary-button { flex: 1; }
+    .api-note { margin: 13px 0 0; color: #888a93; font-size: 11px; line-height: 1.65; }
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 10; padding: 12px 18px; border-radius: 8px; background: #252630; color: white; font-size: 13px; box-shadow: 0 8px 30px #0002; transition: .2s; max-width: calc(100vw - 32px); }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+    .dialog-backdrop { display: none; position: fixed; inset: 0; z-index: 12; background: #1118; align-items: center; justify-content: center; padding: 20px; }
+    .dialog-backdrop.open { display: flex; }
+    .dialog { width: min(100%, 430px); background: white; border-radius: 12px; padding: 24px; box-shadow: 0 16px 60px #0003; }
+    .dialog h2 { font-size: 18px; margin: 0 0 10px; }
+    .dialog p { color: #62646d; font-size: 13px; line-height: 1.7; margin: 0 0 20px; }
+    .dialog-actions { display: flex; justify-content: flex-end; }
+    .page-view[hidden] { display: none; }
+    .page-banner { padding: 11px 14px; margin: 0 0 20px; border: 1px solid #f1dfb7; border-radius: 8px; background: #fffaf0; color: #745f30; font-size: 12px; line-height: 1.6; }
+    .page-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .stat-card { padding: 19px; }
+    .stat-label { color: var(--muted); font-size: 12px; }
+    .stat-value { font-size: 26px; font-weight: 800; margin-top: 10px; letter-spacing: -.5px; }
+    .stat-change { margin-top: 7px; font-size: 11px; color: #169b70; }
+    .dashboard-lower { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr); gap: 16px; margin-top: 18px; }
+    .panel { padding: 20px; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+    .panel-heading h2 { margin: 0; font-size: 15px; }
+    .muted-small { color: var(--muted); font-size: 11px; }
+    .chart { height: 190px; display: flex; align-items: end; gap: 12px; padding: 8px 5px 0; border-bottom: 1px solid var(--line); }
+    .chart-column { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 8px; }
+    .chart-bar { width: min(28px, 72%); min-height: 8px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #fe6681, var(--pink)); }
+    .chart-label { color: var(--muted); font-size: 10px; padding-bottom: 8px; }
+    .top-video { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f2; }
+    .video-thumb { width: 42px; height: 52px; border-radius: 6px; display: grid; place-items: center; background: linear-gradient(145deg,#ffc1d0,#eee4ff); color: #9b4761; }
+    .top-video-title { font-size: 12px; font-weight: 700; }
+    .top-video-meta { margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .page-toolbar select { width: auto; min-width: 135px; }
+    .post-list { overflow: hidden; }
+    .post-row { display: grid; grid-template-columns: 52px minmax(0,1fr) 105px 105px 110px; gap: 15px; align-items: center; padding: 14px 18px; border-bottom: 1px solid #f0f0f2; font-size: 12px; }
+    .post-row:last-child { border-bottom: 0; }
+    .post-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .post-subtitle { color: var(--muted); margin-top: 5px; font-size: 10px; }
+    .post-head { color: var(--muted); font-size: 10px; font-weight: 600; }
+    .status-pill { width: fit-content; border-radius: 20px; padding: 5px 8px; background: #f0f0f2; color: #686a73; font-size: 10px; }
+    .status-pill.example { background: #fff4dc; color: #876a2a; }
+    .account-panel { max-width: 650px; padding: 26px; }
+    .account-mark { width: 58px; height: 58px; margin-bottom: 16px; display: grid; place-items: center; border-radius: 18px; background: var(--ink); color: white; font-size: 30px; box-shadow: 3px 0 var(--cyan), -3px 0 var(--pink); }
+    .account-panel h2 { margin: 0 0 8px; font-size: 18px; }
+    .account-panel p { max-width: 520px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+    .connect-list { padding: 0; margin: 20px 0; list-style: none; }
+    .connect-list li { padding: 10px 0; border-bottom: 1px solid #f0f0f2; font-size: 12px; }
+    .connect-list li::before { content: "✓"; color: #159a70; font-weight: 800; margin-right: 10px; }
+    .account-connected-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+    .account-connected-head h2 { margin: 0 0 4px; }
+    .account-avatar { width: 58px; height: 58px; border-radius: 18px; object-fit: cover; }
+    .status-pill.connected { background: #e4f6ee; color: #159a70; }
+    .inbox-layout { display: grid; grid-template-columns: 290px minmax(0,1fr); min-height: 530px; overflow: hidden; }
+    .conversation-list { border-right: 1px solid var(--line); }
+    .conversation-search { padding: 14px; border-bottom: 1px solid var(--line); }
+    .conversation-search input, .reply-box input { width: 100%; height: 39px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; outline: none; font-size: 12px; }
+    .conversation { width: 100%; display: flex; gap: 11px; align-items: center; padding: 14px; border: 0; border-bottom: 1px solid #f3f3f5; background: white; text-align: left; }
+    .conversation.active { background: #fff5f7; }
+    .person-avatar { width: 39px; height: 39px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #f3e3d9; color: #795843; font-weight: 700; }
+    .person-avatar.blue { background:#e3ecff; color:#45629b; }
+    .person-avatar.green { background:#dff2e8; color:#42785b; }
+    .conversation-info { min-width: 0; flex: 1; }
+    .conversation-top { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; }
+    .conversation-time { color: #9a9ba2; font-size: 10px; font-weight: 400; white-space: nowrap; }
+    .conversation-preview { overflow: hidden; margin-top: 5px; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .unread-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--pink); }
+    .chat-panel { min-width: 0; display: flex; flex-direction: column; }
+    .chat-header { min-height: 66px; padding: 12px 18px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid var(--line); }
+    .chat-header strong { font-size: 13px; }
+    .online-label { display: block; margin-top: 4px; color: #179b70; font-size: 10px; }
+    .chat-messages { flex: 1; min-height: 330px; max-height: 440px; overflow: auto; padding: 18px; background: #fcfcfd; }
+    .chat-day { width: fit-content; margin: 0 auto 18px; color: #999ba3; font-size: 10px; }
+    .message { display: flex; margin: 9px 0; }
+    .message.outgoing { justify-content: flex-end; }
+    .message-bubble { max-width: min(78%, 390px); padding: 10px 12px; border-radius: 12px 12px 12px 3px; background: white; border: 1px solid #efeff2; font-size: 12px; line-height: 1.65; }
+    .message.outgoing .message-bubble { border: 0; border-radius: 12px 12px 3px 12px; background: #ffe9ee; }
+    .message-stamp { margin-top: 5px; color: #9b9ca4; font-size: 9px; text-align: right; }
+    .reply-box { display: flex; gap: 9px; padding: 13px; border-top: 1px solid var(--line); }
+    .reply-box .primary-button { flex: 0 0 auto; min-width: 74px; }
+    .comment-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+    .filter-tabs { display: flex; gap: 7px; flex-wrap: wrap; }
+    .filter-tab { padding: 8px 12px; border: 1px solid var(--line); border-radius: 20px; background: white; color: #6f717a; font-size: 11px; }
+    .filter-tab.active { border-color: #ffd0da; background: #fff3f6; color: var(--pink); font-weight: 700; }
+    .comment-card { padding: 17px; margin-bottom: 11px; }
+    .comment-head { display: flex; gap: 11px; align-items: flex-start; }
+    .comment-content { min-width: 0; flex: 1; }
+    .comment-author { font-size: 12px; font-weight: 750; }
+    .comment-time { margin-left: 8px; color: #999ba3; font-size: 10px; font-weight: 400; }
+    .comment-text { margin: 6px 0 8px; color: #454751; font-size: 12px; line-height: 1.7; }
+    .comment-video { color: #878992; font-size: 10px; }
+    .comment-actions { display: flex; align-items: center; gap: 14px; margin-top: 9px; }
+    .comment-action { padding: 0; border: 0; background: none; color: #797b84; font-size: 10px; }
+    .comment-action:hover { color: var(--pink); }
+    .comment-reply-form { display: none; gap: 8px; margin-top: 12px; }
+    .comment-reply-form.open { display: flex; }
+    .comment-reply-form input { min-width: 0; flex: 1; height: 36px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; font-size: 11px; }
+    .comment-reply-form button { padding: 0 12px; border: 0; border-radius: 6px; background: var(--pink); color: white; font-size: 11px; font-weight: 700; }
+    .comment-reply { margin: 12px 0 0 50px; padding: 10px 12px; border-left: 2px solid #ffd0da; background: #fff9fa; color: #565862; font-size: 11px; line-height: 1.6; }
+    .timeline { position: relative; padding-left: 26px; }
+    .timeline::before { content: ""; position: absolute; left: 8px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(#ff92a8,#e9e9ed 82%); }
+    .timeline-day { position: relative; margin: 24px 0 12px; color: #777983; font-size: 11px; font-weight: 700; }
+    .timeline-day:first-child { margin-top: 0; }
+    .timeline-entry { position: relative; padding: 16px; margin-bottom: 11px; }
+    .timeline-entry::before { content: ""; position: absolute; left: -24px; top: 21px; width: 10px; height: 10px; border: 3px solid white; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 1px #ffd0da; }
+    .timeline-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .timeline-type { color: var(--pink); font-size: 10px; font-weight: 700; }
+    .timeline-time { color: #999ba3; font-size: 10px; }
+    .timeline-entry h3 { margin: 8px 0 5px; font-size: 13px; }
+    .timeline-entry p { margin: 0; color: #70727b; font-size: 11px; line-height: 1.7; }
+    .timeline-metrics { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 11px; color: #767881; font-size: 10px; }
+    .timeline-cta { margin-top: 12px; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 68px minmax(0,1fr); }
+      .sidebar { padding: 20px 9px; }
+      .side-label, .nav-item span:not(.nav-icon), .account-note { display: none; }
+      .nav-item { justify-content: center; padding: 0; }
+      .side-divider { margin: 16px 5px; }
+      main { padding: 28px 24px 50px; }
+      .editor { grid-template-columns: minmax(0,1fr); }
+      .form-card { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+      .form-card > .section-title, .form-card > .section-help, .post-actions, .api-note { grid-column: 1 / -1; }
+      .page-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .dashboard-lower { grid-template-columns: 1fr; }
+      .inbox-layout { grid-template-columns: 235px minmax(0,1fr); }
+    }
+    @media (max-width: 560px) {
+      .topbar { height: 56px; padding: 0 16px; }
+      .top-actions { gap: 11px; }
+      .help-link { display: none; }
+      .layout { min-height: calc(100vh - 56px); grid-template-columns: 1fr; }
+      .sidebar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 6; height: 58px; display: flex; justify-content: space-around; align-items: center; padding: 4px 8px; background: white; border-right: 0; border-top: 1px solid var(--line); }
+      .nav-item { width: 48px; min-height: 42px; margin: 0; }
+      .nav-item { width: 42px; }
+      .side-divider { display: none; }
+      main { padding: 24px 15px 86px; }
+      h1 { font-size: 22px; }
+      .subtitle { font-size: 12px; }
+      .heading { margin-bottom: 20px; }
+      .draft-status { font-size: 10px; }
+      .upload-card, .form-card { padding: 17px; }
+      .dropzone { min-height: 270px; }
+      .form-card { display: block; }
+      .requirements { grid-template-columns: 1fr; }
+      .page-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 21px; }
+      .post-row { grid-template-columns: 42px minmax(0,1fr) 78px; gap: 9px; padding: 12px; }
+      .post-row > :nth-child(3), .post-row > :nth-child(4), .post-head > :nth-child(3), .post-head > :nth-child(4) { display: none; }
+      .account-panel { padding: 19px; }
+      .inbox-layout { grid-template-columns: 1fr; }
+      .conversation-list { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .conversation-search { display: none; }
+      .conversation { min-width: 145px; flex: 1; padding: 10px 8px; }
+      .conversation-time { display: none; }
+      .chat-messages { min-height: 270px; max-height: 340px; }
+      .chat-header { min-height: 58px; }
+      .reply-box { padding: 10px; }
+      .comment-toolbar { align-items: flex-start; flex-direction: column; }
+      .comment-card { padding: 13px; }
+      .comment-reply { margin-left: 0; }
+    }
+
+    :root {
+      --ink: #211d2e;
+      --muted: #858192;
+      --line: #ece9f1;
+      --soft: #f8f6fb;
+      --pink: #f33268;
+    }
+    body {
+      background:
+        radial-gradient(ellipse at 75% -20%, rgba(255, 220, 231, .5), transparent 36%),
+        #f8f7fb;
+      color: var(--ink);
+      font-family: "Noto Sans Thai", Inter, Tahoma, Arial, sans-serif;
+    }
+    .topbar {
+      height: 70px;
+      padding: 0 36px;
+      border-bottom-color: rgba(233, 230, 239, .85);
+      background: rgba(255, 255, 255, .9);
+      box-shadow: 0 3px 18px rgba(40, 25, 70, .035);
+      backdrop-filter: blur(16px);
+    }
+    .brand { font-size: 17px; letter-spacing: -.25px; }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, #292336, #111018);
+      box-shadow: 2px 0 var(--cyan), -2px 0 var(--pink), 0 5px 12px rgba(243, 50, 104, .18);
+    }
+    .layout { min-height: calc(100vh - 70px); grid-template-columns: 246px minmax(0, 1fr); }
+    .sidebar {
+      min-height: calc(100vh - 70px);
+      padding: 31px 15px;
+      background: rgba(255, 255, 255, .72);
+      border-right-color: #eeebf2;
+    }
+    .side-label { margin: 0 13px 13px; color: #a09bab; letter-spacing: .85px; }
+    .nav-item {
+      min-height: 46px;
+      position: relative;
+      margin: 4px 0;
+      border-radius: 10px;
+      color: #696575;
+      transition: color .16s ease, background .16s ease, transform .16s ease;
+    }
+    .nav-item:hover { background: #f8f5fb; color: var(--ink); transform: translateX(2px); }
+    .nav-item.active {
+      color: #d9265a;
+      background: linear-gradient(100deg, #fff0f4, #fff7f9);
+      box-shadow: inset 3px 0 var(--pink);
+    }
+    .nav-icon { font-size: 17px; }
+    .side-divider { border-top-color: #eeeaf2; margin: 25px 10px; }
+    .account-note { border-radius: 10px; margin-top: 8px; color: #868291; background: #f8f6fa; }
+    main { width: min(100%, 1300px); padding: 40px 48px 76px; }
+    .heading { align-items: center; margin-bottom: 28px; }
+    h1 { font-size: 29px; letter-spacing: -.8px; font-weight: 800; }
+    .subtitle { margin-top: 8px; color: #858192; font-size: 13px; }
+    .card {
+      border: 1px solid rgba(231, 227, 237, .94);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 7px 24px rgba(40, 25, 70, .045);
+      transition: box-shadow .18s ease, transform .18s ease;
+    }
+    .stat-card:hover, .top-video:hover, .comment-card:hover, .timeline-entry:hover {
+      box-shadow: 0 12px 30px rgba(40, 25, 70, .075);
+      transform: translateY(-2px);
+    }
+    .stat-card { padding: 21px; overflow: hidden; position: relative; }
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      width: 76px;
+      height: 76px;
+      right: -27px;
+      top: -28px;
+      border-radius: 50%;
+      background: linear-gradient(140deg, rgba(255, 223, 233, .75), rgba(255, 241, 247, .1));
+    }
+    .stat-label { color: #777383; font-size: 12px; }
+    .stat-value { margin-top: 11px; font-size: 29px; letter-spacing: -.8px; }
+    .stat-change { font-size: 11px; }
+    .dashboard-lower { gap: 18px; margin-top: 20px; }
+    .panel { padding: 22px; }
+    .panel-heading { margin-bottom: 19px; }
+    .panel-heading h2 { font-size: 15px; font-weight: 750; }
+    .chart {
+      height: 220px;
+      gap: clamp(8px, 2.2vw, 24px);
+      padding: 10px 8px 0;
+      border-bottom: 1px solid #e8e4ed;
+      background: repeating-linear-gradient(to bottom, transparent 0, transparent 53px, rgba(232, 228, 237, .48) 54px, transparent 55px);
+    }
+    .chart-column { gap: 9px; }
+    .chart-bar {
+      width: clamp(17px, 3vw, 30px);
+      min-height: 9px;
+      border-radius: 6px 6px 1px 1px;
+      background: linear-gradient(180deg, #ff6689 0%, #f33268 100%);
+      box-shadow: 0 5px 12px rgba(243, 50, 104, .15);
+      transition: filter .16s ease, transform .16s ease;
+    }
+    .chart-column:hover .chart-bar { filter: saturate(1.2); transform: scaleX(1.12); }
+    .chart-label { padding-bottom: 9px; color: #797584; font-size: 10px; }
+    .top-video { padding: 12px 9px; border-radius: 10px; transition: .18s ease; }
+    .video-thumb { width: 46px; height: 56px; border-radius: 10px; }
+    .status-pill { padding: 6px 10px; }
+    .page-banner {
+      padding: 13px 16px;
+      margin-bottom: 22px;
+      border-color: #f4dfb6;
+      border-radius: 11px;
+      background: linear-gradient(100deg, #fffaf0, #fffdf7);
+    }
+    .primary-button, .choose-button {
+      border-radius: 9px;
+      background: linear-gradient(110deg, #f33268, #ed285e);
+      box-shadow: 0 5px 12px rgba(243, 50, 104, .16);
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .primary-button:hover, .choose-button:hover { background: linear-gradient(110deg, #e92a5d, #dc1f52); transform: translateY(-1px); box-shadow: 0 8px 17px rgba(243, 50, 104, .22); }
+    .secondary-button, .filter-tab { border-color: #e8e4ed; border-radius: 9px; }
+    .filter-tab { border-radius: 22px; }
+    .filter-tab.active { border-color: #ffd3df; background: #fff0f4; color: #d9265a; }
+    .inbox-layout { border-radius: 16px; }
+    .conversation.active { background: linear-gradient(100deg, #fff0f4, #fff8fa); }
+    .chat-messages { background: linear-gradient(160deg, #fbf9fc, #f8f7fa); }
+    .message.outgoing .message-bubble { background: linear-gradient(120deg, #ffe8ef, #fff0f4); }
+    .comment-card, .timeline-entry { transition: .18s ease; }
+    .timeline::before { background: linear-gradient(#f76b8c 0%, #eadde5 64%, #e9e7ed 100%); }
+    .timeline-entry::before { background: var(--pink); box-shadow: 0 0 0 3px #fff, 0 0 0 5px #ffd5df; }
+    .dropzone { border-radius: 14px; background: linear-gradient(145deg, #fcfbfd, #f8f6fa); }
+    .dropzone.dragging { border-color: var(--pink); background: #fff4f7; }
+    .upload-symbol { border-radius: 18px; color: var(--pink); box-shadow: 0 5px 15px rgba(38, 24, 58, .05); }
+    textarea, select, .conversation-search input, .reply-box input, .comment-reply-form input {
+      border-color: #e7e3eb;
+      border-radius: 9px;
+    }
+    .toast { border-radius: 11px; box-shadow: 0 12px 32px rgba(28, 23, 39, .2); }
+    .page-view:not([hidden]) { animation: page-arrive .24s ease both; }
+    @keyframes page-arrive {
+      from { opacity: .65; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 72px minmax(0, 1fr); }
+      .sidebar { padding: 24px 10px; }
+      main { padding: 30px 26px 60px; }
+      .chart { height: 205px; }
+    }
+    @media (max-width: 560px) {
+      .topbar { height: 58px; padding: 0 16px; }
+      .layout { min-height: calc(100vh - 58px); }
+      .sidebar {
+        height: 62px;
+        min-height: 0;
+        padding: 5px 8px;
+        border-top: 1px solid #eeeaf2;
+        background: rgba(255,255,255,.94);
+        box-shadow: 0 -5px 20px rgba(40, 25, 70, .05);
+        backdrop-filter: blur(14px);
+      }
+      .nav-item { width: 42px; min-height: 42px; border-radius: 12px; }
+      .nav-item.active { box-shadow: inset 0 -3px var(--pink); }
+      main { padding: 25px 15px 94px; }
+      h1 { font-size: 24px; }
+      .heading { align-items: flex-start; margin-bottom: 21px; }
+      .card { border-radius: 14px; }
+      .panel { padding: 17px; }
+      .chart { height: 185px; gap: 8px; padding-right: 2px; padding-left: 2px; }
+      .chart-bar { width: min(22px, 70%); }
+      .chart-label { font-size: 9px; }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 23px; }
+      .inbox-layout { border-radius: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+    .analytics-view { --analytics-rose: #fa3c70; }
+    .analytics-view .heading { align-items: center; }
+    .analytics-view .heading-copy { display: flex; align-items: center; gap: 15px; }
+    .analytics-view .heading-mark {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid #ffe0e9;
+      border-radius: 15px;
+      color: var(--analytics-rose);
+      background: linear-gradient(145deg, #fff, #fff0f5);
+      box-shadow: 0 7px 18px rgba(243, 50, 104, .08);
+      font-size: 21px;
+    }
+    .analytics-view .heading h1 { font-size: 27px; }
+    .analytics-view .heading select { width: auto; min-width: 152px; border-radius: 10px; }
+    .analytics-view .page-banner {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 11px 14px;
+      margin-bottom: 19px;
+      border-color: #f0e9f4;
+      border-radius: 10px;
+      color: #777383;
+      background: rgba(255,255,255,.76);
+      font-size: 11px;
+    }
+    .analytics-view .page-banner::before { content: "i"; width: 17px; height: 17px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; color: #9b5c79; background: #fff0f5; font: 700 10px Georgia, serif; }
+    .analytics-kpis { gap: 14px; }
+    .analytics-kpis .stat-card { min-height: 120px; padding: 18px 19px; border-radius: 14px; }
+    .analytics-kpis .stat-card::after { width: 64px; height: 64px; right: -22px; top: -24px; }
+    .analytics-kpis .stat-value { margin-top: 9px; font-size: 25px; }
+    .analytics-kpis .stat-change { display: flex; align-items: center; gap: 5px; margin-top: 6px; color: #179b70; }
+    .analytics-chart-card { margin-top: 16px; padding: 22px 22px 16px; overflow: hidden; }
+    .analytics-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0 0 10px; }
+    .analytics-chart-title { margin: 0; font-size: 15px; font-weight: 750; }
+    .analytics-chart-caption { margin-top: 4px; color: #9996a3; font-size: 10px; }
+    .analytics-total { text-align: right; }
+    .analytics-total strong { display: block; color: #292435; font-size: 20px; letter-spacing: -.4px; }
+    .analytics-total span { color: #179b70; font-size: 10px; }
+    .analytics-plot {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      align-items: stretch;
+      height: 220px;
+      padding: 16px 9px 0;
+      border-bottom: 1px solid #e8e4ed;
+      background: repeating-linear-gradient(to bottom, transparent 0, transparent 53px, #f0edf3 54px, transparent 55px);
+    }
+    .analytics-day {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+    .analytics-value {
+      position: absolute;
+      z-index: 3;
+      bottom: calc(var(--bar-height) + 10px);
+      padding: 5px 7px;
+      border: 1px solid #f0eaf0;
+      border-radius: 7px;
+      color: #514b5b;
+      background: white;
+      box-shadow: 0 4px 12px rgba(40,25,70,.08);
+      font-size: 9px;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translateY(4px);
+      pointer-events: none;
+      transition: .15s ease;
+    }
+    .analytics-day:hover .analytics-value, .analytics-day:focus-within .analytics-value { opacity: 1; transform: translateY(0); }
+    .analytics-bar {
+      width: clamp(18px, 4.5vw, 30px);
+      height: var(--bar-height);
+      min-height: 11px;
+      border-radius: 7px 7px 2px 2px;
+      background: linear-gradient(180deg, #ff678e 0%, #fb3d70 75%, #ed2c62 100%);
+      box-shadow: 0 7px 15px rgba(243, 50, 104, .16);
+      transition: filter .16s ease, transform .16s ease;
+    }
+    .analytics-day:hover .analytics-bar { filter: saturate(1.12); transform: translateY(-2px); }
+    .analytics-day-label { padding: 10px 0 9px; color: #797584; font-size: 10px; }
+    .analytics-legend { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; color: #898694; font-size: 10px; }
+    .analytics-legend span:first-child::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #f84b78; }
+    .analytics-extra { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .analytics-insight { padding: 18px 20px; }
+    .analytics-insight h2 { margin: 0; font-size: 13px; }
+    .analytics-insight p { margin: 8px 0 0; color: #858192; font-size: 11px; line-height: 1.7; }
+    .analytics-insight strong { color: #2d2838; }
+    @media (max-width: 560px) {
+      .layout { grid-template-columns: 1fr; }
+      main { width: 100%; }
+      .analytics-view .heading-copy { gap: 10px; }
+      .analytics-view .heading-mark { width: 40px; height: 40px; border-radius: 13px; font-size: 18px; }
+      .analytics-view .heading h1 { font-size: 22px; }
+      .analytics-view .heading select { min-width: 0; width: 118px; height: 36px; padding: 0 7px; font-size: 10px; }
+      .analytics-kpis { gap: 9px; }
+      .analytics-kpis .stat-card { min-height: 106px; padding: 13px; }
+      .analytics-kpis .stat-value { font-size: 21px; }
+      .analytics-chart-card { padding: 17px 14px 13px; }
+      .analytics-plot { height: 195px; padding-right: 3px; padding-left: 3px; }
+      .analytics-bar { width: min(23px, 64%); }
+      .analytics-day-label { font-size: 9px; }
+      .analytics-extra { grid-template-columns: 1fr; gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">♪</span><span>Creator Studio</span></div>
+    <div class="top-actions">
+      <a class="help-link" href="#help">ศูนย์ช่วยเหลือ</a>
+      <div class="avatar" aria-label="บัญชีผู้ใช้">ค</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="เมนูหลัก">
+      <p class="side-label">เมนู</p>
+      <a class="nav-item" href="#overview" data-page-link="overview" aria-label="ภาพรวม"><span class="nav-icon">⌂</span><span>ภาพรวม</span></a>
+      <a class="nav-item active" href="#upload" data-page-link="upload" aria-label="อัปโหลด"><span class="nav-icon">＋</span><span>อัปโหลด</span></a>
+      <a class="nav-item" href="#posts" data-page-link="posts" aria-label="โพสต์"><span class="nav-icon">▤</span><span>โพสต์</span></a>
+      <a class="nav-item" href="#analytics" data-page-link="analytics" aria-label="วิเคราะห์"><span class="nav-icon">▥</span><span>วิเคราะห์</span></a>
+      <a class="nav-item" href="#comments" data-page-link="comments" aria-label="ความคิดเห็น"><span class="nav-icon">♡</span><span>ความคิดเห็น</span></a>
+      <a class="nav-item" href="#inbox" data-page-link="inbox" aria-label="กล่องข้อความ"><span class="nav-icon">▱</span><span>กล่องข้อความ</span></a>
+      <a class="nav-item" href="#timeline" data-page-link="timeline" aria-label="ไทม์ไลน์"><span class="nav-icon">◷</span><span>ไทม์ไลน์</span></a>
+      <hr class="side-divider">
+      <p class="side-label">บัญชีของคุณ</p>
+      <a class="nav-item" href="#account" data-page-link="account" aria-label="จัดการบัญชี"><span class="nav-icon">◎</span><span>จัดการบัญชี</span></a>
+      <div class="account-note">เชื่อมต่อบัญชี TikTok เพื่อจัดการและเผยแพร่โพสต์</div>
+    </aside>
+
+    <main>
+      <section class="page-view" data-page="upload">
+      <div class="heading">
+        <div>
+          <h1>อัปโหลดวิดีโอ</h1>
+          <p class="subtitle">เตรียมวิดีโอและรายละเอียดก่อนเผยแพร่ไปยังช่องของคุณ</p>
+        </div>
+        <div class="draft-status" id="draftStatus">บันทึกร่างอัตโนมัติ</div>
+      </div>
+
+      <div class="editor">
+        <section class="card upload-card" aria-labelledby="videoHeading">
+          <h2 class="section-title" id="videoHeading">ไฟล์วิดีโอ</h2>
+          <p class="section-help">เลือกไฟล์จากอุปกรณ์ หรือลากไฟล์มาวางในกรอบนี้</p>
+          <div class="dropzone" id="dropzone">
+            <div id="emptyUpload">
+              <div class="upload-symbol" aria-hidden="true">↑</div>
+              <div class="drop-title">ลากวิดีโอมาวางที่นี่</div>
+              <div class="drop-help">หรือเลือกไฟล์จากอุปกรณ์ของคุณ<br>รองรับไฟล์ MP4 และ WebM</div>
+              <button class="choose-button" id="chooseButton" type="button">เลือกไฟล์</button>
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+              <video class="preview-video" id="videoPreview" controls playsinline></video>
+              <div class="file-row">
+                <div class="file-meta">
+                  <div class="file-name" id="fileName"></div>
+                  <div class="file-size" id="fileSize"></div>
+                </div>
+                <button class="text-button" id="removeFile" type="button">เปลี่ยนไฟล์</button>
+              </div>
+            </div>
+            <input id="fileInput" type="file" accept="video/mp4,video/webm,.mp4,.webm">
+          </div>
+          <div class="requirements">
+            <span class="requirement">วิดีโอ MP4 หรือ WebM</span>
+            <span class="requirement">ขนาดไฟล์ไม่เกิน 287 MB</span>
+            <span class="requirement">ความยาว 3 วินาที – 10 นาที</span>
+            <span class="requirement">แนะนำวิดีโอแนวตั้ง 9:16</span>
+          </div>
+        </section>
+
+        <section class="card form-card" aria-labelledby="detailsHeading">
+          <h2 class="section-title" id="detailsHeading">รายละเอียดโพสต์</h2>
+          <p class="section-help">เพิ่มคำบรรยายและตั้งค่าการมองเห็นวิดีโอ</p>
+          <div class="field">
+            <label class="field-label" for="caption">คำบรรยาย <span class="counter"><span id="captionCount">0</span>/2200</span></label>
+            <textarea id="caption" maxlength="2200" placeholder="เขียนคำบรรยาย ใส่แฮชแท็ก หรือแท็กผู้ใช้..."></textarea>
+            <div class="caption-tools">เคล็ดลับ: ใช้แฮชแท็กที่เกี่ยวข้องเพื่อช่วยให้ผู้ชมค้นพบวิดีโอ</div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="privacy">ใครดูวิดีโอนี้ได้</label>
+            <select id="privacy">
+              <option value="public">ทุกคน</option>
+              <option value="friends">เพื่อน</option>
+              <option value="private">เฉพาะฉัน</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-label">การตั้งค่าเพิ่มเติม</div>
+            <div class="toggle-row"><span>อนุญาตให้แสดงความคิดเห็น</span><label class="switch"><input id="comments" type="checkbox" checked><span class="slider"></span></label></div>
+            <div class="toggle-row"><span>อนุญาตให้ทำ Duet</span><label class="switch"><input id="duet" type="checkbox" checked><span class="slider"></span></label></div>
+            <div class="toggle-row"><span>อนุญาตให้ทำ Stitch</span><label class="switch"><input id="stitch" type="checkbox" checked><span class="slider"></span></label></div>
+          </div>
+          <div class="post-actions">
+            <button class="secondary-button" id="saveDraft" type="button">บันทึกร่าง</button>
+            <button class="primary-button" id="publishButton" type="button">ตรวจสอบก่อนโพสต์</button>
+          </div>
+          <p class="api-note">หน้านี้เป็นต้นแบบ การเผยแพร่จริงต้องเชื่อมบัญชีและระบบ TikTok API ก่อน</p>
+        </section>
+      </div>
+      </section>
+      <section class="page-view" data-page="overview" hidden>
+        <div class="heading"><div><h1>ภาพรวมช่อง</h1><p class="subtitle">สรุปผลการดำเนินงานและกิจกรรมล่าสุดของช่อง</p></div><button class="secondary-button" type="button" data-page-link="account">เชื่อมต่อบัญชี</button></div>
+        <div class="page-banner">ตัวอย่างหน้าจอ — ตัวเลขและโพสต์ด้านล่างเป็นข้อมูลจำลอง จะแสดงข้อมูลจริงเมื่อเชื่อมต่อ TikTok API</div>
+        <div class="page-grid">
+          <article class="card stat-card"><div class="stat-label">ยอดรับชมวิดีโอ</div><div class="stat-value">128.4K</div><div class="stat-change">↑ 12.8% <span class="muted-small">จากช่วงก่อนหน้า</span></div></article>
+          <article class="card stat-card"><div class="stat-label">ผู้ติดตามทั้งหมด</div><div class="stat-value">8,245</div><div class="stat-change">↑ 3.2% <span class="muted-small">จากช่วงก่อนหน้า</span></div></article>
+          <article class="card stat-card"><div class="stat-label">ยอดถูกใจ</div><div class="stat-value">24.6K</div><div class="stat-change">↑ 8.1% <span class="muted-small">จากช่วงก่อนหน้า</span></div></article>
+          <article class="card stat-card"><div class="stat-label">ความคิดเห็น</div><div class="stat-value">1,382</div><div class="stat-change">↑ 5.6% <span class="muted-small">จากช่วงก่อนหน้า</span></div></article>
+          <article class="card stat-card"><div class="stat-label">แชร์</div><div class="stat-value">962</div><div class="stat-change">↑ 2.4% <span class="muted-small">จากช่วงก่อนหน้า</span></div></article>
+          <article class="card stat-card"><div class="stat-label">โพสต์ในช่วงนี้</div><div class="stat-value">12</div><div class="stat-change" style="color:#777983">ใน 7 วันที่ผ่านมา</div></article>
+        </div>
+        <div class="dashboard-lower">
+          <section class="card panel"><div class="panel-heading"><h2>ภาพรวมการรับชม</h2><span class="muted-small">7 วันที่ผ่านมา · ตัวอย่าง</span></div><div class="chart" aria-label="กราฟยอดรับชมตัวอย่าง">
+            <div class="chart-column"><div class="chart-bar" style="height:42%"></div><span class="chart-label">จ.</span></div><div class="chart-column"><div class="chart-bar" style="height:65%"></div><span class="chart-label">อ.</span></div><div class="chart-column"><div class="chart-bar" style="height:51%"></div><span class="chart-label">พ.</span></div><div class="chart-column"><div class="chart-bar" style="height:82%"></div><span class="chart-label">พฤ.</span></div><div class="chart-column"><div class="chart-bar" style="height:61%"></div><span class="chart-label">ศ.</span></div><div class="chart-column"><div class="chart-bar" style="height:94%"></div><span class="chart-label">ส.</span></div><div class="chart-column"><div class="chart-bar" style="height:73%"></div><span class="chart-label">อา.</span></div>
+          </div></section>
+          <section class="card panel"><div class="panel-heading"><h2>โพสต์ยอดนิยม</h2><a class="text-button" href="#posts" data-page-link="posts">ดูทั้งหมด</a></div>
+            <div class="top-video"><div class="video-thumb">▶</div><div><div class="top-video-title">ไอเดียทำอาหารง่าย ๆ</div><div class="top-video-meta">ยอดรับชม 32.8K · ตัวอย่าง</div></div></div>
+            <div class="top-video"><div class="video-thumb">▶</div><div><div class="top-video-title">พาเที่ยววันหยุด</div><div class="top-video-meta">ยอดรับชม 18.2K · ตัวอย่าง</div></div></div>
+            <div class="top-video"><div class="video-thumb">▶</div><div><div class="top-video-title">เคล็ดลับประจำวัน</div><div class="top-video-meta">ยอดรับชม 12.6K · ตัวอย่าง</div></div></div>
+          </section>
+        </div>
+      </section>
+      <section class="page-view" data-page="posts" hidden>
+        <div class="heading"><div><h1>โพสต์</h1><p class="subtitle">จัดการโพสต์และดูสถานะการเผยแพร่</p></div><button class="primary-button" type="button" data-page-link="upload">＋ อัปโหลดวิดีโอ</button></div>
+        <div class="page-banner">รายการด้านล่างเป็นข้อมูลตัวอย่าง โพสต์จริงจะแสดงเมื่อเชื่อมต่อบัญชี TikTok ผ่าน API</div>
+        <div class="page-toolbar"><div class="section-title">รายการวิดีโอ</div><select aria-label="กรองสถานะโพสต์"><option>โพสต์ทั้งหมด</option><option>เผยแพร่แล้ว</option><option>ฉบับร่าง</option></select></div>
+        <div class="card post-list">
+          <div class="post-row post-head"><span>วิดีโอ</span><span>ชื่อโพสต์</span><span>ยอดรับชม</span><span>ถูกใจ</span><span>สถานะ</span></div>
+          <div class="post-row"><div class="video-thumb">▶</div><div><div class="post-title">ไอเดียทำอาหารง่าย ๆ ใน 5 นาที</div><div class="post-subtitle">12 ต.ค. 2026 · ตัวอย่าง</div></div><span>32.8K</span><span>4,210</span><span class="status-pill example">ตัวอย่าง</span></div>
+          <div class="post-row"><div class="video-thumb">▶</div><div><div class="post-title">พาเที่ยววันหยุดใกล้กรุงเทพฯ</div><div class="post-subtitle">10 ต.ค. 2026 · ตัวอย่าง</div></div><span>18.2K</span><span>2,540</span><span class="status-pill example">ตัวอย่าง</span></div>
+          <div class="post-row"><div class="video-thumb">▶</div><div><div class="post-title">เคล็ดลับดี ๆ ที่อยากบอกต่อ</div><div class="post-subtitle">8 ต.ค. 2026 · ตัวอย่าง</div></div><span>12.6K</span><span>1,386</span><span class="status-pill example">ตัวอย่าง</span></div>
+          <div class="post-row"><div class="video-thumb">▶</div><div><div class="post-title">เบื้องหลังวันทำงานของเรา</div><div class="post-subtitle">5 ต.ค. 2026 · ตัวอย่าง</div></div><span>9,840</span><span>972</span><span class="status-pill example">ตัวอย่าง</span></div>
+        </div>
+      </section>
+      <section class="page-view analytics-view" data-page="analytics" hidden>
+        <div class="heading"><div class="heading-copy"><span class="heading-mark" aria-hidden="true">↗</span><div><h1>วิเคราะห์ช่อง</h1><p class="subtitle">ติดตามการเข้าถึงและการมีส่วนร่วมของผู้ชม</p></div></div><select aria-label="ช่วงเวลาข้อมูล"><option>7 วันที่ผ่านมา</option><option>28 วันที่ผ่านมา</option><option>60 วันที่ผ่านมา</option></select></div>
+        <div class="page-banner">ตัวเลขและกราฟทั้งหมดเป็นข้อมูลจำลอง เพื่อแสดงรูปแบบหน้าจอเท่านั้น</div>
+        <div class="page-grid analytics-kpis">
+          <article class="card stat-card"><div class="stat-label">ยอดรับชมวิดีโอ</div><div class="stat-value">128.4K</div><div class="stat-change">↑ 12.8%</div></article>
+          <article class="card stat-card"><div class="stat-label">ผู้เข้าชมโปรไฟล์</div><div class="stat-value">6,842</div><div class="stat-change">↑ 9.4%</div></article>
+          <article class="card stat-card"><div class="stat-label">ผู้ติดตามใหม่</div><div class="stat-value">+256</div><div class="stat-change">↑ 3.2%</div></article>
+          <article class="card stat-card"><div class="stat-label">ยอดถูกใจ</div><div class="stat-value">24.6K</div><div class="stat-change">↑ 8.1%</div></article>
+          <article class="card stat-card"><div class="stat-label">ความคิดเห็น</div><div class="stat-value">1,382</div><div class="stat-change">↑ 5.6%</div></article>
+          <article class="card stat-card"><div class="stat-label">แชร์</div><div class="stat-value">962</div><div class="stat-change">↑ 2.4%</div></article>
+        </div>
+        <section class="card analytics-chart-card">
+          <div class="analytics-chart-head">
+            <div><h2 class="analytics-chart-title">ภาพรวมการรับชม</h2><div class="analytics-chart-caption">แนวโน้มยอดรับชมในช่วง 7 วันที่ผ่านมา</div></div>
+            <div class="analytics-total"><strong>128.4K</strong><span>↑ 12.8% จากสัปดาห์ก่อน</span></div>
+          </div>
+          <div class="analytics-plot" role="img" aria-label="ยอดรับชมตัวอย่างใน 7 วัน: จันทร์ 12,400, อังคาร 17,200, พุธ 14,100, พฤหัสบดี 20,800, ศุกร์ 16,000, เสาร์ 26,400, อาทิตย์ 21,500 ครั้ง">
+            <div class="analytics-day" style="--bar-height:43%"><span class="analytics-value">12,400 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">จ.</span></div>
+            <div class="analytics-day" style="--bar-height:62%"><span class="analytics-value">17,200 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">อ.</span></div>
+            <div class="analytics-day" style="--bar-height:50%"><span class="analytics-value">14,100 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">พ.</span></div>
+            <div class="analytics-day" style="--bar-height:76%"><span class="analytics-value">20,800 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">พฤ.</span></div>
+            <div class="analytics-day" style="--bar-height:59%"><span class="analytics-value">16,000 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">ศ.</span></div>
+            <div class="analytics-day" style="--bar-height:96%"><span class="analytics-value">26,400 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">ส.</span></div>
+            <div class="analytics-day" style="--bar-height:79%"><span class="analytics-value">21,500 ครั้ง</span><div class="analytics-bar"></div><span class="analytics-day-label">อา.</span></div>
+          </div>
+          <div class="analytics-legend"><span>ยอดรับชม</span><span>ข้อมูลตัวอย่าง</span></div>
+        </section>
+        <div class="analytics-extra">
+          <section class="card analytics-insight"><h2>วันที่มีผู้ชมมากที่สุด</h2><p><strong>วันเสาร์</strong> มียอดรับชมตัวอย่างสูงสุด <strong>26,400 ครั้ง</strong> ในช่วงเวลานี้</p></section>
+          <section class="card analytics-insight"><h2>การเติบโตของช่อง</h2><p>ยอดรับชมเพิ่มขึ้น <strong>12.8%</strong> เมื่อเทียบกับช่วงเวลาก่อนหน้า</p></section>
+        </div>
+      </section>
+      <section class="page-view" data-page="account" hidden>
+        <div class="heading"><div><h1>จัดการบัญชี</h1><p class="subtitle">เชื่อมต่อและจัดการบัญชี TikTok ของคุณ</p></div></div>
+        <div class="card account-panel" id="accountDisconnectedPanel"><div class="account-mark">♪</div><h2>ยังไม่ได้เชื่อมต่อบัญชี TikTok</h2>
+          <p>เชื่อมต่อบัญชีเพื่อเริ่มเตรียมโพสต์และดูข้อมูลช่องที่ TikTok อนุญาตให้แอปเข้าถึงได้</p>
+          <ul class="connect-list"><li>การเชื่อมต่อจะต้องได้รับอนุญาตจากเจ้าของบัญชี</li><li>ฟีเจอร์ที่ใช้งานได้ขึ้นอยู่กับสิทธิ์ API และการอนุมัติจาก TikTok</li><li>หน้านี้เชื่อมต่อผ่านระบบล็อกอินและ API จริงของ TikTok</li></ul>
+          <button class="primary-button" id="connectAccount" type="button">เริ่มเชื่อมต่อบัญชี</button>
+          <p class="api-note">คุณจะถูกพาไปหน้าล็อกอินของ TikTok โดยตรง ระบบนี้ไม่ขอหรือเก็บรหัสผ่าน TikTok ของคุณ</p>
+        </div>
+        <div class="card account-panel" id="accountConnectedPanel" hidden>
+          <div class="account-connected-head">
+            <img id="accountAvatar" class="account-avatar" alt="" hidden>
+            <div class="account-mark" id="accountAvatarFallback">♪</div>
+            <div>
+              <h2 id="accountDisplayName">เชื่อมต่อบัญชี TikTok แล้ว</h2>
+              <span class="status-pill connected">เชื่อมต่ออยู่</span>
+            </div>
+          </div>
+          <p>บัญชีนี้เชื่อมต่อกับ Creator Studio ผ่าน TikTok Login Kit เรียบร้อยแล้ว</p>
+          <button class="text-button" id="disconnectAccount" type="button">ตัดการเชื่อมต่อบัญชี</button>
+        </div>
+      </section>
+      <section class="page-view" data-page="comments" hidden>
+        <div class="heading"><div><h1>ความคิดเห็น</h1><p class="subtitle">ดูแลบทสนทนาและตอบกลับความคิดเห็นจากผู้ชม</p></div><span class="status-pill example">ข้อมูลตัวอย่าง</span></div>
+        <div class="page-banner">ความคิดเห็นด้านล่างเป็นตัวอย่าง หน้านี้ยังไม่ได้รับคอมเมนต์จากบัญชี TikTok จริง</div>
+        <div class="comment-toolbar">
+          <div class="filter-tabs" role="group" aria-label="กรองความคิดเห็น">
+            <button class="filter-tab active" type="button" data-comment-filter="all">ทั้งหมด <span id="commentTotal">3</span></button>
+            <button class="filter-tab" type="button" data-comment-filter="unreplied">ยังไม่ตอบ <span>2</span></button>
+            <button class="filter-tab" type="button" data-comment-filter="replied">ตอบแล้ว <span>1</span></button>
+          </div>
+          <select aria-label="เรียงความคิดเห็น" style="width:auto"><option>ใหม่ล่าสุด</option><option>เก่าที่สุด</option></select>
+        </div>
+        <div id="commentList">
+          <article class="card comment-card" data-comment-status="unreplied">
+            <div class="comment-head"><div class="person-avatar blue">น</div><div class="comment-content">
+              <div class="comment-author">น้องน้ำ <span class="comment-time">· 12 นาทีที่แล้ว · ตัวอย่าง</span></div>
+              <p class="comment-text">ขอสูตรแบบละเอียดได้ไหมคะ น่ากินมากเลยค่ะ 😍</p>
+              <div class="comment-video">วิดีโอ: ไอเดียทำอาหารง่าย ๆ ใน 5 นาที</div>
+              <div class="comment-actions"><button class="comment-action" type="button">♡ ถูกใจ 12</button><button class="comment-action" type="button" data-reply-toggle>↩ ตอบกลับ</button></div>
+              <form class="comment-reply-form"><input aria-label="พิมพ์คำตอบ" placeholder="เขียนคำตอบของคุณ..."><button type="submit">ส่งคำตอบ</button></form>
+            </div></div>
+          </article>
+          <article class="card comment-card" data-comment-status="replied">
+            <div class="comment-head"><div class="person-avatar green">ม</div><div class="comment-content">
+              <div class="comment-author">มะลิรีวิว <span class="comment-time">· 1 ชั่วโมงที่แล้ว · ตัวอย่าง</span></div>
+              <p class="comment-text">พิกัดสวยมาก เซฟไว้ไปตามรอยแล้วค่ะ ✨</p>
+              <div class="comment-video">วิดีโอ: พาเที่ยววันหยุดใกล้กรุงเทพฯ</div>
+              <div class="comment-actions"><button class="comment-action" type="button">♡ ถูกใจ 8</button><button class="comment-action" type="button" data-reply-toggle>↩ ตอบกลับ</button></div>
+              <div class="comment-reply"><strong>คุณตอบกลับ:</strong> ขอบคุณมากค่ะ ขอให้เที่ยวให้สนุกนะคะ 😊</div>
+              <form class="comment-reply-form"><input aria-label="พิมพ์คำตอบ" placeholder="เขียนคำตอบของคุณ..."><button type="submit">ส่งคำตอบ</button></form>
+            </div></div>
+          </article>
+          <article class="card comment-card" data-comment-status="unreplied">
+            <div class="comment-head"><div class="person-avatar">อ</div><div class="comment-content">
+              <div class="comment-author">อาร์ตชอบดู <span class="comment-time">· 3 ชั่วโมงที่แล้ว · ตัวอย่าง</span></div>
+              <p class="comment-text">คลิปดีมากครับ ทำอีกเยอะ ๆ นะครับ</p>
+              <div class="comment-video">วิดีโอ: เคล็ดลับดี ๆ ที่อยากบอกต่อ</div>
+              <div class="comment-actions"><button class="comment-action" type="button">♡ ถูกใจ 4</button><button class="comment-action" type="button" data-reply-toggle>↩ ตอบกลับ</button></div>
+              <form class="comment-reply-form"><input aria-label="พิมพ์คำตอบ" placeholder="เขียนคำตอบของคุณ..."><button type="submit">ส่งคำตอบ</button></form>
+            </div></div>
+          </article>
+        </div>
+      </section>
+      <section class="page-view" data-page="inbox" hidden>
+        <div class="heading"><div><h1>กล่องข้อความ</h1><p class="subtitle">จัดการและตอบข้อความจากลูกค้าในที่เดียว</p></div><span class="status-pill example">ข้อมูลตัวอย่าง</span></div>
+        <div class="page-banner">ข้อความสนทนาด้านล่างเป็นข้อมูลจำลอง การรับและส่ง DM จริงต้องเชื่อม TikTok Business Messaging API และได้รับสิทธิ์ก่อน</div>
+        <section class="card inbox-layout" aria-label="กล่องข้อความตัวอย่าง">
+          <div class="conversation-list">
+            <div class="conversation-search"><input id="conversationSearch" type="search" placeholder="ค้นหาบทสนทนา..." aria-label="ค้นหาบทสนทนา"></div>
+            <button class="conversation active" type="button" data-conversation="nam">
+              <span class="person-avatar blue">น</span><span class="conversation-info"><span class="conversation-top"><span>น้องน้ำ</span><span class="conversation-time">10:42</span></span><span class="conversation-preview">ขอรายละเอียดสินค้าเพิ่มได้ไหมคะ</span></span><span class="unread-dot"></span>
+            </button>
+            <button class="conversation" type="button" data-conversation="mali">
+              <span class="person-avatar green">ม</span><span class="conversation-info"><span class="conversation-top"><span>มะลิรีวิว</span><span class="conversation-time">เมื่อวาน</span></span><span class="conversation-preview">ขอบคุณมากค่ะ ได้รับของแล้ว</span></span>
+            </button>
+            <button class="conversation" type="button" data-conversation="art">
+              <span class="person-avatar">อ</span><span class="conversation-info"><span class="conversation-top"><span>อาร์ตชอบดู</span><span class="conversation-time">จ.</span></span><span class="conversation-preview">มีสีอื่นให้เลือกไหมครับ</span></span>
+            </button>
+          </div>
+          <div class="chat-panel">
+            <div class="chat-header"><span class="person-avatar blue" id="chatAvatar">น</span><div><strong id="chatName">น้องน้ำ</strong><span class="online-label">บทสนทนาตัวอย่าง</span></div></div>
+            <div class="chat-messages" id="chatMessages" aria-live="polite">
+              <div class="chat-day">วันนี้ · ข้อมูลตัวอย่าง</div>
+              <div class="message"><div class="message-bubble">สวัสดีค่ะ สนใจสินค้าที่อยู่ในคลิปค่ะ<div class="message-stamp">10:38</div></div></div>
+              <div class="message outgoing"><div class="message-bubble">สวัสดีค่ะ ยินดีให้ข้อมูลนะคะ<div class="message-stamp">10:40 · ส่งแล้ว</div></div></div>
+              <div class="message"><div class="message-bubble">ขอรายละเอียดสินค้าเพิ่มได้ไหมคะ<div class="message-stamp">10:42</div></div></div>
+            </div>
+            <form class="reply-box" id="chatForm"><input id="chatInput" aria-label="พิมพ์ข้อความตอบกลับ" placeholder="พิมพ์ข้อความตอบกลับ..." autocomplete="off"><button class="primary-button" type="submit">ส่ง</button></form>
+          </div>
+        </section>
+      </section>
+      <section class="page-view" data-page="timeline" hidden>
+        <div class="heading"><div><h1>ไทม์ไลน์กิจกรรม</h1><p class="subtitle">ติดตามความเคลื่อนไหวของโพสต์และการโต้ตอบล่าสุด</p></div><button class="secondary-button" type="button" data-page-link="comments">ดูความคิดเห็น</button></div>
+        <div class="page-banner">กิจกรรมทั้งหมดด้านล่างเป็นข้อมูลตัวอย่าง สำหรับแสดงรูปแบบไทม์ไลน์ในระบบ</div>
+        <div class="timeline">
+          <div class="timeline-day">วันนี้ · 12 ตุลาคม</div>
+          <article class="card timeline-entry"><div class="timeline-entry-head"><span class="timeline-type">วิดีโอใหม่</span><span class="timeline-time">10:30</span></div><h3>ไอเดียทำอาหารง่าย ๆ ใน 5 นาที</h3><p>โพสต์ตัวอย่างถูกเผยแพร่ในช่องของคุณ</p><div class="timeline-metrics"><span>▶ 3,240 รับชม</span><span>♡ 284 ถูกใจ</span><span>▤ 36 ความคิดเห็น</span></div><a href="#posts" data-page-link="posts" class="text-button timeline-cta">ดูโพสต์</a></article>
+          <article class="card timeline-entry"><div class="timeline-entry-head"><span class="timeline-type">ความคิดเห็นใหม่</span><span class="timeline-time">10:12</span></div><h3>น้องน้ำ แสดงความคิดเห็นในวิดีโอ</h3><p>“ขอสูตรแบบละเอียดได้ไหมคะ น่ากินมากเลยค่ะ 😍”</p><a href="#comments" data-page-link="comments" class="text-button timeline-cta">ตอบความคิดเห็น</a></article>
+          <article class="card timeline-entry"><div class="timeline-entry-head"><span class="timeline-type">ข้อความใหม่</span><span class="timeline-time">09:48</span></div><h3>มีข้อความใหม่จากลูกค้า</h3><p>น้องน้ำ: “ขอรายละเอียดสินค้าเพิ่มได้ไหมคะ”</p><a href="#inbox" data-page-link="inbox" class="text-button timeline-cta">เปิดกล่องข้อความ</a></article>
+          <div class="timeline-day">เมื่อวาน · 11 ตุลาคม</div>
+          <article class="card timeline-entry"><div class="timeline-entry-head"><span class="timeline-type">สรุปประจำวัน</span><span class="timeline-time">20:00</span></div><h3>ช่องของคุณมีการโต้ตอบเพิ่มขึ้น</h3><p>มีผู้ชมเข้ามามีส่วนร่วมกับโพสต์ตัวอย่างของคุณอย่างต่อเนื่อง</p><div class="timeline-metrics"><span>♡ 1,240 ถูกใจ</span><span>↗ 86 แชร์</span><span>＋ 42 ผู้ติดตามใหม่</span></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="dialog-backdrop" id="dialogBackdrop" role="presentation">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <h2 id="dialogTitle">พร้อมสำหรับขั้นตอนถัดไป</h2>
+      <p id="dialogMessage"></p>
+      <div class="dialog-actions"><button class="primary-button" id="closeDialog" type="button">เข้าใจแล้ว</button></div>
+    </section>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const dropzone = document.getElementById("dropzone");
+    const emptyUpload = document.getElementById("emptyUpload");
+    const previewWrap = document.getElementById("previewWrap");
+    const videoPreview = document.getElementById("videoPreview");
+    const caption = document.getElementById("caption");
+    const captionCount = document.getElementById("captionCount");
+    const draftStatus = document.getElementById("draftStatus");
+    const toast = document.getElementById("toast");
+    const dialogBackdrop = document.getElementById("dialogBackdrop");
+    const pageViews = [...document.querySelectorAll(".page-view")];
+    const sampleConversations = {
+      nam: {
+        name: "น้องน้ำ", avatar: "น", avatarClass: "blue",
+        messages: [
+          { text: "สวัสดีค่ะ สนใจสินค้าที่อยู่ในคลิปค่ะ", time: "10:38" },
+          { text: "สวัสดีค่ะ ยินดีให้ข้อมูลนะคะ", time: "10:40", outgoing: true },
+          { text: "ขอรายละเอียดสินค้าเพิ่มได้ไหมคะ", time: "10:42" }
+        ]
+      },
+      mali: {
+        name: "มะลิรีวิว", avatar: "ม", avatarClass: "green",
+        messages: [
+          { text: "ได้รับสินค้าแล้วนะคะ แพ็กมาดีมากเลย", time: "เมื่อวาน" },
+          { text: "ขอบคุณมากค่ะ ดีใจที่ชอบนะคะ 😊", time: "เมื่อวาน", outgoing: true },
+          { text: "ขอบคุณมากค่ะ ได้รับของแล้ว", time: "เมื่อวาน" }
+        ]
+      },
+      art: {
+        name: "อาร์ตชอบดู", avatar: "อ", avatarClass: "",
+        messages: [
+          { text: "มีสีอื่นให้เลือกไหมครับ", time: "จ." },
+          { text: "มีให้เลือกหลายสีเลยค่ะ", time: "จ.", outgoing: true }
+        ]
+      }
+    };
+    let previewUrl = "";
+    let toastTimer;
+    let draftTimer;
+
+    function showPage(page) {
+      const target = pageViews.some(view => view.dataset.page === page) ? page : "upload";
+      pageViews.forEach(view => { view.hidden = view.dataset.page !== target; });
+      document.querySelectorAll(".sidebar [data-page-link]").forEach(link => {
+        link.classList.toggle("active", link.dataset.pageLink === target);
+      });
+      const title = pageViews.find(view => view.dataset.page === target).querySelector("h1").textContent;
+      document.title = `${title} | Creator Studio`;
+    }
+
+    document.addEventListener("click", event => {
+      const link = event.target.closest("[data-page-link]");
+      if (!link) return;
+      event.preventDefault();
+      const page = link.dataset.pageLink;
+      if (location.hash !== `#${page}`) history.pushState({ page }, "", `#${page}`);
+      showPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    window.addEventListener("popstate", () => showPage(location.hash.slice(1)));
+    window.addEventListener("hashchange", () => showPage(location.hash.slice(1)));
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function formatSize(bytes) {
+      return bytes >= 1024 * 1024
+        ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    function clearPreview() {
+      videoPreview.pause();
+      videoPreview.removeAttribute("src");
+      videoPreview.load();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = "";
+      fileInput.value = "";
+      previewWrap.classList.remove("visible");
+      emptyUpload.hidden = false;
+    }
+
+    function useFile(file) {
+      if (!file) return;
+      const validType = ["video/mp4", "video/webm"].includes(file.type) || /\.(mp4|webm)$/i.test(file.name);
+      if (!validType) {
+        showToast("กรุณาเลือกไฟล์วิดีโอ MP4 หรือ WebM");
+        return;
+      }
+      if (file.size > 287 * 1024 * 1024) {
+        showToast("ไฟล์มีขนาดเกิน 287 MB");
+        return;
+      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(file);
+      videoPreview.src = previewUrl;
+      videoPreview.onloadedmetadata = () => {
+        if (videoPreview.duration < 3 || videoPreview.duration > 600) {
+          clearPreview();
+          showToast("วิดีโอต้องมีความยาวตั้งแต่ 3 วินาทีถึง 10 นาที");
+          return;
+        }
+        document.getElementById("fileName").textContent = file.name;
+        document.getElementById("fileSize").textContent = formatSize(file.size);
+        emptyUpload.hidden = true;
+        previewWrap.classList.add("visible");
+      };
+      videoPreview.onerror = () => {
+        clearPreview();
+        showToast("ไม่สามารถเปิดไฟล์วิดีโอนี้ได้");
+      };
+    }
+
+    function saveDraft(showMessage) {
+      const draft = {
+        caption: caption.value,
+        privacy: document.getElementById("privacy").value,
+        comments: document.getElementById("comments").checked,
+        duet: document.getElementById("duet").checked,
+        stitch: document.getElementById("stitch").checked
+      };
+      try {
+        localStorage.setItem("creatorStudioDraft", JSON.stringify(draft));
+        draftStatus.textContent = "บันทึกร่างแล้ว";
+        if (showMessage) showToast("บันทึกร่างไว้ในเบราว์เซอร์แล้ว");
+      } catch (error) {
+        draftStatus.textContent = "บันทึกร่างไม่สำเร็จ";
+        showToast("เบราว์เซอร์ไม่สามารถบันทึกร่างได้");
+      }
+    }
+
+    function restoreDraft() {
+      try {
+        const saved = localStorage.getItem("creatorStudioDraft");
+        if (!saved) return;
+        const draft = JSON.parse(saved);
+        caption.value = typeof draft.caption === "string" ? draft.caption : "";
+        if (["public", "friends", "private"].includes(draft.privacy)) {
+          document.getElementById("privacy").value = draft.privacy;
+        }
+        for (const key of ["comments", "duet", "stitch"]) {
+          if (typeof draft[key] === "boolean") document.getElementById(key).checked = draft[key];
+        }
+        captionCount.textContent = caption.value.length;
+      } catch (error) {
+        showToast("ไม่สามารถเปิดร่างที่บันทึกไว้ได้");
+      }
+    }
+
+    document.getElementById("chooseButton").addEventListener("click", () => fileInput.click());
+    document.getElementById("removeFile").addEventListener("click", clearPreview);
+    fileInput.addEventListener("change", event => useFile(event.target.files[0]));
+    caption.addEventListener("input", () => {
+      captionCount.textContent = caption.value.length;
+      draftStatus.textContent = "มีการแก้ไขที่ยังไม่บันทึก";
+      window.clearTimeout(draftTimer);
+      draftTimer = window.setTimeout(() => saveDraft(false), 500);
+    });
+    for (const control of [
+      document.getElementById("privacy"),
+      document.getElementById("comments"),
+      document.getElementById("duet"),
+      document.getElementById("stitch")
+    ]) {
+      control.addEventListener("change", () => {
+        draftStatus.textContent = "มีการแก้ไขที่ยังไม่บันทึก";
+        window.clearTimeout(draftTimer);
+        draftTimer = window.setTimeout(() => saveDraft(false), 500);
+      });
+    }
+    dropzone.addEventListener("dragover", event => {
+      event.preventDefault();
+      dropzone.classList.add("dragging");
+    });
+    dropzone.addEventListener("dragleave", event => {
+      if (!dropzone.contains(event.relatedTarget)) dropzone.classList.remove("dragging");
+    });
+    dropzone.addEventListener("drop", event => {
+      event.preventDefault();
+      dropzone.classList.remove("dragging");
+      useFile(event.dataTransfer.files[0]);
+    });
+    document.getElementById("saveDraft").addEventListener("click", () => saveDraft(true));
+    document.getElementById("publishButton").addEventListener("click", () => {
+      if (!videoPreview.src) {
+        showToast("เลือกไฟล์วิดีโอก่อนดำเนินการต่อ");
+        return;
+      }
+      document.getElementById("dialogMessage").textContent =
+        "วิดีโอพร้อมสำหรับการตรวจสอบ แต่การโพสต์ไปยัง TikTok ยังไม่เปิดใช้งานในต้นแบบนี้ ต้องเชื่อมบัญชีและตั้งค่า TikTok Content Posting API ก่อน";
+      dialogBackdrop.classList.add("open");
+      document.getElementById("closeDialog").focus();
+    });
+    document.getElementById("closeDialog").addEventListener("click", () => dialogBackdrop.classList.remove("open"));
+    document.getElementById("connectAccount").addEventListener("click", () => {
+      document.getElementById("dialogTitle").textContent = "ยังเชื่อมต่อบัญชีไม่ได้";
+      document.getElementById("dialogMessage").textContent =
+        "การเชื่อมต่อจริงต้องตั้งค่า TikTok Developer App, OAuth redirect URL และขอสิทธิ์ API ที่จำเป็นก่อน";
+      dialogBackdrop.classList.add("open");
+      document.getElementById("closeDialog").focus();
+    });
+    dialogBackdrop.addEventListener("click", event => {
+      if (event.target === dialogBackdrop) dialogBackdrop.classList.remove("open");
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") dialogBackdrop.classList.remove("open");
+    });
+    document.querySelectorAll("[data-reply-toggle]").forEach(button => {
+      button.addEventListener("click", () => {
+        const form = button.closest(".comment-content").querySelector(".comment-reply-form");
+        form.classList.toggle("open");
+        if (form.classList.contains("open")) form.querySelector("input").focus();
+      });
+    });
+    document.querySelectorAll(".comment-reply-form").forEach(form => {
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        const input = form.querySelector("input");
+        const reply = input.value.trim();
+        if (!reply) {
+          input.focus();
+          return;
+        }
+        const replyNode = document.createElement("div");
+        replyNode.className = "comment-reply";
+        const label = document.createElement("strong");
+        label.textContent = "คุณตอบกลับ: ";
+        replyNode.append(label, document.createTextNode(reply));
+        form.before(replyNode);
+        form.closest(".comment-card").dataset.commentStatus = "replied";
+        form.classList.remove("open");
+        input.value = "";
+        showToast("เพิ่มคำตอบในตัวอย่างแล้ว");
+        applyCommentFilter(document.querySelector(".filter-tab.active").dataset.commentFilter);
+      });
+    });
+    function applyCommentFilter(filter) {
+      document.querySelectorAll(".comment-card").forEach(card => {
+        card.hidden = filter !== "all" && card.dataset.commentStatus !== filter;
+      });
+      document.querySelectorAll("[data-comment-filter]").forEach(button => {
+        button.classList.toggle("active", button.dataset.commentFilter === filter);
+      });
+    }
+    document.querySelectorAll("[data-comment-filter]").forEach(button => {
+      button.addEventListener("click", () => applyCommentFilter(button.dataset.commentFilter));
+    });
+    document.querySelectorAll("[data-conversation]").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-conversation]").forEach(item => item.classList.toggle("active", item === button));
+        const conversation = sampleConversations[button.dataset.conversation];
+        document.getElementById("chatName").textContent = conversation.name;
+        const avatar = document.getElementById("chatAvatar");
+        avatar.textContent = conversation.avatar;
+        avatar.className = `person-avatar ${conversation.avatarClass}`;
+        const messages = document.getElementById("chatMessages");
+        messages.replaceChildren();
+        const day = document.createElement("div");
+        day.className = "chat-day";
+        day.textContent = "บทสนทนาตัวอย่าง";
+        messages.append(day);
+        conversation.messages.forEach(item => {
+          const message = document.createElement("div");
+          message.className = item.outgoing ? "message outgoing" : "message";
+          const bubble = document.createElement("div");
+          bubble.className = "message-bubble";
+          bubble.append(document.createTextNode(item.text));
+          const stamp = document.createElement("div");
+          stamp.className = "message-stamp";
+          stamp.textContent = item.outgoing ? `${item.time} · ส่งแล้ว` : item.time;
+          bubble.append(stamp);
+          message.append(bubble);
+          messages.append(message);
+        });
+      });
+    });
+    document.getElementById("conversationSearch").addEventListener("input", event => {
+      const query = event.target.value.trim().toLocaleLowerCase("th");
+      document.querySelectorAll("[data-conversation]").forEach(button => {
+        button.hidden = !button.textContent.toLocaleLowerCase("th").includes(query);
+      });
+    });
+    document.getElementById("chatForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) {
+        input.focus();
+        return;
+      }
+      const message = document.createElement("div");
+      message.className = "message outgoing";
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+      bubble.append(document.createTextNode(text));
+      const stamp = document.createElement("div");
+      stamp.className = "message-stamp";
+      stamp.textContent = "ตอนนี้ · ตัวอย่าง";
+      bubble.append(stamp);
+      message.append(bubble);
+      const messages = document.getElementById("chatMessages");
+      messages.append(message);
+      messages.scrollTop = messages.scrollHeight;
+      input.value = "";
+      showToast("เพิ่มข้อความในตัวอย่างแล้ว — ยังไม่ได้ส่งไป TikTok");
+    });
+    showPage(location.hash.slice(1) || "upload");
+    restoreDraft();
+  </script>
+</body>
+</html>
